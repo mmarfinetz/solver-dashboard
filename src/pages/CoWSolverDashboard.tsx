@@ -6,8 +6,7 @@ import {
   Paper,
   Typography,
   Alert,
-  CircularProgress,
-  Button
+  CircularProgress
 } from '@mui/material';
 import { useSolverMetrics } from '../hooks/useSolverMetrics';
 import { ConnectionStatus } from '../components/ConnectionStatus';
@@ -25,8 +24,7 @@ export const CoWSolverDashboard: React.FC = () => {
     timeSeries,
     oracleMetrics,
     loading,
-    connectionMode,
-    enableDemoMode
+    connectionMode
   } = useSolverMetrics();
 
   if (loading && connectionMode === 'connecting') {
@@ -61,37 +59,20 @@ export const CoWSolverDashboard: React.FC = () => {
           </Box>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
             Professional-grade monitoring for competitive solver performance
-            {connectionMode === 'demo' && ' (Demo Mode - Simulated Data)'}
           </Typography>
         </Box>
 
         {/* Connection Warning */}
-        {connectionMode === 'disconnected' && !stats && (
-          <Alert
-            severity="warning"
-            sx={{ mb: 3 }}
-            action={
-              <Button color="inherit" size="small" onClick={enableDemoMode}>
-                Enable Demo Mode
-              </Button>
-            }
-          >
-            Unable to connect to the solver API. Click on the status badge to configure the API URL or enable demo mode.
+        {connectionMode === 'disconnected' && (
+          <Alert severity="error" sx={{ mb: 3 }}>
+            Unable to connect to the solver API. Click on the status badge to configure the API URL.
           </Alert>
         )}
 
-        {/* Demo Mode Info */}
-        {connectionMode === 'demo' && (
-          <Alert severity="info" sx={{ mb: 3 }}>
-            Viewing simulated data in demo mode. Click on the status badge to connect to your real API.
-            Historical data is being saved locally.
-          </Alert>
-        )}
-
-        {/* Show stored data even when disconnected */}
+        {/* Show cached data info */}
         {connectionMode === 'disconnected' && stats && (
           <Alert severity="info" sx={{ mb: 3 }}>
-            Showing cached data from your last session. Click on the status badge to reconnect or enable demo mode.
+            Showing cached data from your last session.
           </Alert>
         )}
 

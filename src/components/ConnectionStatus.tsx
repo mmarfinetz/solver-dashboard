@@ -18,8 +18,6 @@ const getStatusConfig = (mode: ConnectionMode) => {
   switch (mode) {
     case 'connected':
       return { color: 'success.main', label: 'Connected', chipColor: 'success' as const };
-    case 'demo':
-      return { color: 'warning.main', label: 'Demo Mode', chipColor: 'warning' as const };
     case 'connecting':
       return { color: 'info.main', label: 'Connecting...', chipColor: 'info' as const };
     case 'disconnected':
@@ -29,7 +27,7 @@ const getStatusConfig = (mode: ConnectionMode) => {
 };
 
 export const ConnectionStatus: React.FC = () => {
-  const { connectionMode, apiUrl, setApiUrl, enableDemoMode, retryConnection, loading } = useSolverMetrics();
+  const { connectionMode, apiUrl, setApiUrl, retryConnection, loading } = useSolverMetrics();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newApiUrl, setNewApiUrl] = useState(apiUrl);
 
@@ -40,11 +38,6 @@ export const ConnectionStatus: React.FC = () => {
       setApiUrl(newApiUrl.trim());
       setDialogOpen(false);
     }
-  };
-
-  const handleEnableDemo = () => {
-    enableDemoMode();
-    setDialogOpen(false);
   };
 
   return (
@@ -103,50 +96,24 @@ export const ConnectionStatus: React.FC = () => {
               placeholder="https://cow-solver-production.up.railway.app"
             />
 
-            <Box sx={{
-              p: 2,
-              bgcolor: 'background.paper',
-              borderRadius: 1,
-              border: '1px solid',
-              borderColor: 'divider'
-            }}>
-              <Typography variant="subtitle2" gutterBottom>
-                Demo Mode
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                Can't connect to your API? Enable demo mode to see the dashboard with simulated data.
-                Your historical data will be preserved.
-              </Typography>
-              <Button
-                variant="outlined"
-                color="warning"
-                onClick={handleEnableDemo}
-                disabled={connectionMode === 'demo'}
-              >
-                {connectionMode === 'demo' ? 'Demo Mode Active' : 'Enable Demo Mode'}
-              </Button>
-            </Box>
-
-            {connectionMode === 'demo' && (
+            {connectionMode === 'disconnected' && (
               <Box sx={{
                 p: 2,
-                bgcolor: 'warning.main',
+                bgcolor: 'error.main',
                 borderRadius: 1,
-                color: 'warning.contrastText'
+                color: 'error.contrastText'
               }}>
                 <Typography variant="body2">
-                  You're viewing simulated data. Click "Retry Connection" to connect to the real API.
+                  Cannot connect to the API. Make sure your backend is running and the URL is correct.
                 </Typography>
               </Box>
             )}
           </Box>
         </DialogContent>
         <DialogActions>
-          {connectionMode === 'demo' && (
-            <Button onClick={retryConnection} color="primary">
-              Retry Connection
-            </Button>
-          )}
+          <Button onClick={retryConnection} color="primary">
+            Retry Connection
+          </Button>
           <Button onClick={() => setDialogOpen(false)}>Cancel</Button>
           <Button onClick={handleSaveUrl} variant="contained" color="primary">
             Save & Connect

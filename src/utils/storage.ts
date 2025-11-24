@@ -6,7 +6,6 @@ const STORAGE_KEYS = {
   TIME_SERIES: 'solver_time_series',
   ORACLE_METRICS: 'solver_oracle_metrics',
   API_URL: 'solver_api_url',
-  DEMO_MODE: 'solver_demo_mode',
   LAST_UPDATED: 'solver_last_updated',
 };
 
@@ -104,22 +103,6 @@ export function setApiUrl(url: string): void {
     localStorage.setItem(STORAGE_KEYS.API_URL, url);
   } catch (e) {
     console.warn('Failed to save API URL to localStorage:', e);
-  }
-}
-
-export function isDemoMode(): boolean {
-  try {
-    return localStorage.getItem(STORAGE_KEYS.DEMO_MODE) === 'true';
-  } catch (e) {
-    return false;
-  }
-}
-
-export function setDemoMode(enabled: boolean): void {
-  try {
-    localStorage.setItem(STORAGE_KEYS.DEMO_MODE, enabled.toString());
-  } catch (e) {
-    console.warn('Failed to save demo mode to localStorage:', e);
   }
 }
 
