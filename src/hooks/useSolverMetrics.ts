@@ -42,6 +42,8 @@ export interface SolverStats {
   p99SolveTimeMs: number;
 
   totalSurplusGenerated: string;
+  // Note: avgSurplusPerAuction from API is deprecated - we calculate avgSurplusPerSubmittedSolution
+  // on the frontend as totalSurplusGenerated / solutionsSubmitted for more meaningful metrics
   avgSurplusPerAuction: string;
   totalGasCost: string;
   netProfit: string;

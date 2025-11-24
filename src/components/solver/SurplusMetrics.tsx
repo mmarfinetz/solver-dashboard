@@ -45,9 +45,13 @@ export const SurplusMetrics: React.FC<SurplusMetricsProps> = ({ stats }) => {
   }
 
   const totalSurplus = parseFloat(stats.totalSurplusGenerated);
-  const avgSurplus = parseFloat(stats.avgSurplusPerAuction);
   const totalGas = parseFloat(stats.totalGasCost);
   const netProfit = parseFloat(stats.netProfit);
+
+  // Calculate average surplus per submitted solution (more meaningful than per auction)
+  const avgSurplusPerSubmittedSolution = stats.solutionsSubmitted > 0
+    ? totalSurplus / stats.solutionsSubmitted
+    : 0;
 
   return (
     <Box>
@@ -67,8 +71,8 @@ export const SurplusMetrics: React.FC<SurplusMetricsProps> = ({ stats }) => {
       <Divider sx={{ my: 2 }} />
 
       <MetricRow
-        label="Avg Surplus per Auction"
-        value={`${avgSurplus.toFixed(6)} ETH`}
+        label="Avg Surplus per Submitted Solution"
+        value={`${avgSurplusPerSubmittedSolution.toFixed(6)} ETH`}
         icon={<AttachMoneyIcon fontSize="small" color="primary" />}
       />
 
