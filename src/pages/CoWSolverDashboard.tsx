@@ -6,10 +6,10 @@ import {
   Paper,
   Typography,
   Alert,
-  CircularProgress,
-  Chip
+  CircularProgress
 } from '@mui/material';
 import { useSolverMetrics } from '../hooks/useSolverMetrics';
+import { ConnectionStatus } from '../components/ConnectionStatus';
 import { AuctionFeed } from '../components/solver/AuctionFeed';
 import { WinRateChart } from '../components/solver/WinRateChart';
 import { SurplusMetrics } from '../components/solver/SurplusMetrics';
@@ -18,17 +18,30 @@ import { PerformanceMetrics } from '../components/solver/PerformanceMetrics';
 import { OracleHealth } from '../components/solver/OracleHealth';
 
 export const CoWSolverDashboard: React.FC = () => {
-  const { stats, recentAuctions, timeSeries, oracleMetrics, connected, loading } = useSolverMetrics();
+  const {
+    stats,
+    recentAuctions,
+    timeSeries,
+    oracleMetrics,
+    loading,
+    connectionMode
+  } = useSolverMetrics();
 
-  if (loading) {
+  if (loading && connectionMode === 'connecting') {
     return (
       <Box
         display="flex"
+        flexDirection="column"
         justifyContent="center"
         alignItems="center"
         minHeight="100vh"
+        gap={2}
+        sx={{ bgcolor: '#0a1929' }}
       >
         <CircularProgress size={60} />
+        <Typography color="text.secondary">
+          Connecting to solver API...
+        </Typography>
       </Box>
     );
   }
@@ -40,13 +53,9 @@ export const CoWSolverDashboard: React.FC = () => {
         <Box sx={{ mb: 4 }}>
           <Box display="flex" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={2}>
             <Typography variant="h4" component="h1" color="white" fontWeight="bold">
-              🐮 CoW Protocol Solver Dashboard
+              CoW Protocol Solver Dashboard
             </Typography>
-            <Chip
-              label={connected ? 'Live' : 'Disconnected'}
-              color={connected ? 'success' : 'error'}
-              sx={{ fontSize: '1rem', height: 36 }}
-            />
+            <ConnectionStatus />
           </Box>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
             Professional-grade monitoring for competitive solver performance
@@ -54,9 +63,16 @@ export const CoWSolverDashboard: React.FC = () => {
         </Box>
 
         {/* Connection Warning */}
-        {!connected && (
-          <Alert severity="warning" sx={{ mb: 3 }}>
-            WebSocket disconnected. Attempting to reconnect...
+        {connectionMode === 'disconnected' && (
+          <Alert severity="error" sx={{ mb: 3 }}>
+            Unable to connect to the solver API. Click on the status badge to configure the API URL.
+          </Alert>
+        )}
+
+        {/* Show cached data info */}
+        {connectionMode === 'disconnected' && stats && (
+          <Alert severity="info" sx={{ mb: 3 }}>
+            Showing cached data from your last session.
           </Alert>
         )}
 

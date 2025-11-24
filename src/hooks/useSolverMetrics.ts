@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import io, { Socket } from 'socket.io-client';
+import * as storage from '../utils/storage';
 
 // Types matching backend metrics
 export interface AuctionMetrics {
@@ -76,6 +77,8 @@ export interface OracleMetrics {
   avgLatencyMs: number;
 }
 
+export type ConnectionMode = 'connecting' | 'connected' | 'disconnected';
+
 interface SolverMetricsData {
   stats: SolverStats | null;
   recentAuctions: AuctionMetrics[];
@@ -83,48 +86,104 @@ interface SolverMetricsData {
   oracleMetrics: OracleMetrics | null;
   connected: boolean;
   loading: boolean;
+  connectionMode: ConnectionMode;
+  apiUrl: string;
+  setApiUrl: (url: string) => void;
+  retryConnection: () => void;
 }
 
-// WebSocket URL - Use Railway in production, localhost for development
-const SOLVER_WS_URL = process.env.REACT_APP_SOLVER_WS_URL || 
-  (process.env.NODE_ENV === 'production' 
+// Default WebSocket URL
+const DEFAULT_WS_URL = process.env.REACT_APP_SOLVER_WS_URL ||
+  (process.env.NODE_ENV === 'production'
     ? 'https://cow-solver-production.up.railway.app'
     : 'http://localhost:8000');
 
 export function useSolverMetrics(): SolverMetricsData {
-  const [stats, setStats] = useState<SolverStats | null>(null);
-  const [recentAuctions, setRecentAuctions] = useState<AuctionMetrics[]>([]);
-  const [timeSeries, setTimeSeries] = useState<TimeSeriesPoint[]>([]);
-  const [oracleMetrics, setOracleMetrics] = useState<OracleMetrics | null>(null);
-  const [connected, setConnected] = useState(false);
+  // Load initial state from localStorage
+  const [stats, setStats] = useState<SolverStats | null>(() => storage.loadStats());
+  const [recentAuctions, setRecentAuctions] = useState<AuctionMetrics[]>(() => storage.loadAuctions());
+  const [timeSeries, setTimeSeries] = useState<TimeSeriesPoint[]>(() => storage.loadTimeSeries());
+  const [oracleMetrics, setOracleMetrics] = useState<OracleMetrics | null>(() => storage.loadOracleMetrics());
+  const [connectionMode, setConnectionMode] = useState<ConnectionMode>('connecting');
   const [loading, setLoading] = useState(true);
+  const [apiUrl, setApiUrlState] = useState<string>(() => storage.getApiUrl() || DEFAULT_WS_URL);
+
+  const socketRef = useRef<Socket | null>(null);
+  const reconnectCountRef = useRef<number>(0);
+
+  // Save to localStorage whenever data changes
+  useEffect(() => {
+    if (stats) storage.saveStats(stats);
+  }, [stats]);
 
   useEffect(() => {
-    console.log('Connecting to Solver WebSocket:', SOLVER_WS_URL);
+    if (recentAuctions.length > 0) storage.saveAuctions(recentAuctions);
+  }, [recentAuctions]);
 
-    const socket: Socket = io(SOLVER_WS_URL, {
+  useEffect(() => {
+    if (timeSeries.length > 0) storage.saveTimeSeries(timeSeries);
+  }, [timeSeries]);
+
+  useEffect(() => {
+    if (oracleMetrics) storage.saveOracleMetrics(oracleMetrics);
+  }, [oracleMetrics]);
+
+  const setApiUrl = useCallback((url: string) => {
+    setApiUrlState(url);
+    storage.setApiUrl(url);
+    // Trigger reconnection
+    if (socketRef.current) {
+      socketRef.current.disconnect();
+    }
+    setConnectionMode('connecting');
+    reconnectCountRef.current = 0;
+  }, []);
+
+  const retryConnection = useCallback(() => {
+    setConnectionMode('connecting');
+    reconnectCountRef.current = 0;
+    if (socketRef.current) {
+      socketRef.current.disconnect();
+      socketRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    console.log('Connecting to Solver WebSocket:', apiUrl);
+    setConnectionMode('connecting');
+
+    const socket: Socket = io(apiUrl, {
       path: '/solver-ws',
       transports: ['polling', 'websocket'],
       timeout: 10000,
       forceNew: true,
       autoConnect: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 2000,
     });
+
+    socketRef.current = socket;
 
     socket.on('connect', () => {
       console.log('Connected to Solver WebSocket:', socket.id);
-      setConnected(true);
+      setConnectionMode('connected');
       setLoading(false);
+      reconnectCountRef.current = 0;
     });
 
     socket.on('disconnect', (reason) => {
       console.log('Disconnected from Solver WebSocket:', reason);
-      setConnected(false);
+      setConnectionMode('disconnected');
     });
 
     socket.on('connect_error', (error) => {
       console.error('Solver WebSocket connection error:', error);
-      setConnected(false);
-      setLoading(false);
+      reconnectCountRef.current++;
+
+      if (reconnectCountRef.current >= 3) {
+        setConnectionMode('disconnected');
+        setLoading(false);
+      }
     });
 
     // Listen for stats updates
@@ -134,7 +193,7 @@ export function useSolverMetrics(): SolverMetricsData {
 
     // Listen for auction history
     socket.on('auctionHistory', (data: AuctionMetrics[]) => {
-      setRecentAuctions(data);
+      setRecentAuctions(prev => storage.mergeAuctions(prev, data));
     });
 
     // Listen for new auction updates
@@ -144,7 +203,7 @@ export function useSolverMetrics(): SolverMetricsData {
 
     // Listen for time series data
     socket.on('timeSeries', (data: TimeSeriesPoint[]) => {
-      setTimeSeries(data);
+      setTimeSeries(prev => storage.mergeTimeSeries(prev, data));
     });
 
     // Listen for time series updates
@@ -163,19 +222,24 @@ export function useSolverMetrics(): SolverMetricsData {
       setRecentAuctions([]);
       setTimeSeries([]);
       setOracleMetrics(null);
+      storage.clearAllData();
     });
 
     return () => {
       socket.disconnect();
     };
-  }, []);
+  }, [apiUrl]);
 
   return {
     stats,
     recentAuctions,
     timeSeries,
     oracleMetrics,
-    connected,
-    loading
+    connected: connectionMode === 'connected',
+    loading,
+    connectionMode,
+    apiUrl,
+    setApiUrl,
+    retryConnection,
   };
 }
