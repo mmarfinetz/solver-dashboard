@@ -12,6 +12,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
 import PendingIcon from '@mui/icons-material/Pending';
 import { AuctionMetrics } from '../../hooks/useSolverMetrics';
+import { weiToEth } from '../../utils/formatters';
 
 interface AuctionFeedProps {
   auctions: AuctionMetrics[];
@@ -119,7 +120,7 @@ export const AuctionFeed: React.FC<AuctionFeedProps> = ({ auctions }) => {
                       <Typography variant="caption" color="text.secondary">
                         {formatTime(auction.timestamp)} • {auction.orderCount} orders •{' '}
                         {auction.solveTimeMs}ms
-                        {auction.surplus && ` • ${parseFloat(auction.surplus).toFixed(4)} ETH`}
+                        {auction.surplus && ` • ${weiToEth(auction.surplus).toFixed(4)} ETH`}
                       </Typography>
                       {auction.error && (
                         <Typography

@@ -3,6 +3,7 @@ import { Box, Typography, Grid, Divider } from '@mui/material';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import { SolverStats } from '../../hooks/useSolverMetrics';
+import { weiToEth } from '../../utils/formatters';
 
 interface SurplusMetricsProps {
   stats: SolverStats | null;
@@ -44,10 +45,10 @@ export const SurplusMetrics: React.FC<SurplusMetricsProps> = ({ stats }) => {
     );
   }
 
-  const totalSurplus = parseFloat(stats.totalSurplusGenerated);
-  const avgSurplus = parseFloat(stats.avgSurplusPerAuction);
-  const totalGas = parseFloat(stats.totalGasCost);
-  const netProfit = parseFloat(stats.netProfit);
+  const totalSurplus = weiToEth(stats.totalSurplusGenerated);
+  const avgSurplus = weiToEth(stats.avgSurplusPerAuction);
+  const totalGas = weiToEth(stats.totalGasCost);
+  const netProfit = weiToEth(stats.netProfit);
 
   return (
     <Box>

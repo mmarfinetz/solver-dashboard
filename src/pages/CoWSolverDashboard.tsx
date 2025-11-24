@@ -9,6 +9,7 @@ import {
   CircularProgress
 } from '@mui/material';
 import { useSolverMetrics } from '../hooks/useSolverMetrics';
+import { weiToEth } from '../utils/formatters';
 import { ConnectionStatus } from '../components/ConnectionStatus';
 import { AuctionFeed } from '../components/solver/AuctionFeed';
 import { WinRateChart } from '../components/solver/WinRateChart';
@@ -112,7 +113,7 @@ export const CoWSolverDashboard: React.FC = () => {
                 Total Surplus
               </Typography>
               <Typography variant="h3" fontWeight="bold">
-                {stats ? parseFloat(stats.totalSurplusGenerated).toFixed(4) : '-'}
+                {stats ? weiToEth(stats.totalSurplusGenerated).toFixed(4) : '-'}
               </Typography>
               <Typography variant="caption" sx={{ opacity: 0.8 }}>
                 ETH generated
